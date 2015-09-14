@@ -3,39 +3,44 @@ __author__ = 'Administrator'
 
 #file work
 
-import os
-import sys
-import xlrd
 import numpy as np
-import random
 from sklearn import preprocessing
+from dataClean import calc_data
 
-from signature import model_operation as op
+import model_operation as op
 
 paraForSign = 35
-paraForPwd = 35
 
 def distance(x):
 	return np.sum(map(lambda x: x*x, x))
 
-def feature_selection(X, y, knew):
-	clf = SelectKBest(f_classif, k=knew)
-	X_new = clf.fit_transform(X, y)
-	return X_new, clf
+def findData(username, db):
+	db.select('data_signature', where="username='{}' and tag='{}'".format(username, 'train'), _test=True)
+	res = db.select('data_signature', where="username='{}' and tag='{}'".format(username, 'train'), order='Time')
+	temp = []
+	data = []
+	number = 1
+	try:
+		for i in res:
+			if i.num == number:
+				temp.append([int(i.dataid), str(i.username), int(i.num), int(i.Time), float(i.X), float(i.Y), float(i.Pressure), float(i.S), str(i.move)])
+			else:
+				print temp
+				temp = calc_data(temp)
+				print temp
+				data.append(temp)
+				temp = []
+				number = i.num
+				temp.append([int(i.dataid), str(i.username), int(i.num), int(i.Time), float(i.X), float(i.Y), float(i.Pressure), float(i.S), str(i.move)])
+		data = np.array(data)
+		return data
+	except:
+		return 0
 
-def findData(username, db, type_):
-	if type_ == 'signature':
-	db.select('card_bank', what='bank, type', where="num='{}'".format(str))
-	return 0
-
-
-def train(username, db, type_):
-	#train must be a ndarray
-	tr = findData(username, db, type_)
-	if type_ == 'signature':
-		para = paraForSign
-	else:
-		para = paraForPwd
+def train(username, db):
+	# train must be a ndarray
+	tr = findData(username, db)
+	para = paraForSign
 	if tr != 0 and tr is not None:
 		scaler = preprocessing.StandardScaler().fit(tr)
 		tr = scaler.transform(tr)
@@ -49,5 +54,6 @@ def train(username, db, type_):
 		return 'train error!'
 
 
-
+if __name__ == "__main__":
+	pass
 

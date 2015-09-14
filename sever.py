@@ -5,6 +5,12 @@ import web
 import json
 import random
 
+
+# import pwd.train_pwd as trp
+import signature.train_signature as trs
+
+
+
 bankdb = web.database(dbn='mysql', host='192.168.81.15', port=3306, db='bankassistant', user='root', pw='root')
 
 urls = (
@@ -60,21 +66,33 @@ def transferPaied(transid):
 	rest = rest - amount - fee
 	if rest > 0:
 		try:
-			res = bankdb.updata('card', where="cardid='{}'".format(cardid), rest='{}'.format(rest))
+			bankdb.update('card', where="cardid='{}'".format(cardid), rest='{}'.format(rest), _test=True)
+			res = bankdb.update('card', where="cardid='{}'".format(cardid), rest='{}'.format(rest))
 			x = res[0]
-			print x
+			bankdb.update('trans_log', where="transid={}".format(transid), payinfo='1', _test=True)
+			res = bankdb.update('trans_log', where="transid={}".format(transid), payinfo='1')
+			x = res[0]
+			print 'change rest done!'
+			return 1
 		except:
 			return 'change rest wrong!'
-	if int(x) == 1:
-		return bankdb.updata('trans_log', where="transid={}".format(transid), payinfo='1')
-	else:
-		return 'did not success!'
 
 def transferReceived(transid):
 	global bankdb
-	return bankdb.updata('trans_log', where="transid={}".format(transid), receivedinfo='1')
+	return bankdb.update('trans_log', where="transid={}".format(transid), receivedinfo='1')
 
+def verify(username, tag):
+	if tag == 'signature':
+		return
 
+def train(username, tag):
+	if tag == 'signature':
+		return trs.train(username, bankdb)
+	elif tag == 'password':
+		# return trp.train(username, bankdb)
+		return 1
+	elif tag == 'identity':
+		return 1
 
 # def dbconn():
 # 	# myvar = dict(name="Bob")
@@ -155,10 +173,11 @@ class Upload:
         fout.close()
 
 class getCardid:
-	def GET(self):
-		return self.POST()
 
-	def POST(self):
+    def GET(self):
+        return self.POST()
+
+    def POST(self):
 		data = web.input()
 		print(data)
 		if 'username' in data.keys():
@@ -181,7 +200,8 @@ class getCardid:
 					temp = dict(i)
 					carddict['cardid'].append(temp['cardid'])
 					print carddict
-				return jsondump(carddict)
+					string = string = '[' +', '.join('"' + str(i) + '"' for i in carddict['cardid']) + ']'
+				return string
 			except:
 				return 'no cards of this username!'
 		else:
@@ -304,19 +324,67 @@ class transfer:
 
 class receiveData:
 	def GET(self):
-		return self.POST()
+		return self.POST
 
 	def POST(self):
 		data = web.input()
-		if "username" in data.keys():
+		global bankdb
+		if "databody" in data.keys():
 			username = data.username
 			tag = data.tag
 			type_ = data.ty
 			databody = data.databody
 			datadict = json.loads(databody)
+			print username, tag, type_, type(datadict), type(databody)
+			num = 1
+			if type_ == 'signature':
+				ty = 'data_' + type_
+				for i in range(len(datadict)):
+					temp = [int(datadict[i][u'numOfSign']), int(datadict[i][u'Time']), float(datadict[i][u'X']), float(datadict[i][u'Y']),
+					        float(datadict[i][u'P']), float(datadict[i][u'S']), datadict[i][u'move']]
+					res = bankdb.insert(ty, username=username, tag=tag, num=temp[0], X=temp[2], Y=temp[3], S=temp[5],
+					                    Time=temp[1], Pressure=temp[4], move=temp[6])
+					if res is not None:
+						print 'insert {} {}s as {} data!'.format(temp[0], type_, tag)
+
+			elif type_ == 'identity' or type_ == 'password':
+				ty = 'data_' + type_
+				for i in range(len(datadict)):
+					if datadict[i][u'startX'] == 0 and datadict[i][u'startY'] == 0:
+						num += 1
+					else:
+						temp = [float(datadict[i][u'startX']), float(datadict[i][u'startY']), datadict[i][u'startSize'], int(datadict[i][u'startTime']),
+						        float(datadict[i][u'endX']), float(datadict[i][u'endY']), datadict[i][u'endSize'], int(datadict[i][u'endTime']),
+						        datadict[i][u'character'], float(datadict[i][u'pressure'])]
+						res = bankdb.insert(ty, username=username, tag=tag, num=num, startX=temp[0], startY=temp[1], startS=temp[2],
+						              startTime=temp[3], endX=temp[4], endY=temp[5], endS=temp[6], endTime=temp[7],
+						              Pressure=temp[9], charKey=temp[8])
+						if res is not None:
+							print 'insert {} {}s as {} data!'.format(num, type_, tag)
+			if tag == 'test':
+				#verify and return
+				if verify(username, tag) == 1:
+					return transferPaied(data.transid)
+				else:
+					return 0
+			else:
+				#update status
+				d = {}
+				d['signature'] = 'signstatus'
+				d['password'] = 'pwdstatus'
+				d['identity'] = 'identitystatus'
+				bankdb.update('user_info', where="username='{}'".format(username), what="{}=1".format(d[tag]), _test=True)
+				bankdb.update('user_info', where="username='{}'".format(username), what="{}=1".format(d[tag]))
+				return train(username, tag)
+		else:
+			return 0
+
+
 
 
 
 if __name__ == "__main__":
+	print train('linan', 'signature')
 	app = web.application(urls, globals())
 	app.run()
+

@@ -1,18 +1,6 @@
 __author__ = 'Administrator'
 # -*- coding: utf-8 -*-
 
-from sklearn import preprocessing
-#X_scaled = preprocessing.scale(X)
-def feature_extract(data):
-	pass
-
-
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Dec 02 17:22:42 2014
-
-@author: Administrator
-"""
 import math
 
 def speed(o, args):
@@ -52,25 +40,20 @@ def average(av):
 def calc_data(o):
 
     features = []
-    del features[:]
 
     pressure = []
-    del pressure[:]
     for p in o:
         pressure += [p[6]]
 
     size = []
-    del size[:]
     for p in o:
         size += [p[7]]
 
     x = []
-    del x[:]
     for p in o:
         x += [p[4]]
 
     y = []
-    del y[:]
     for p in o:
         y += [p[5]]
 
@@ -194,15 +177,6 @@ def calc_data(o):
     maximum_x = max(x)
     maximum_x_position = (o[x.index(maximum_x)][3] - o[0][3])/float(total_time)
 
-    '''
-    #还有疑问
-    maximum_x_position2 = x.index(maximum_x)/float(total_point)
-    aaa = []
-    aaa += [maximum_x_position]
-    aaa += [maximum_x_position2]
-    return aaa
-    '''
-
     #calc maximum_y
     maximum_y = max(y)
     maximum_y_position = (o[y.index(maximum_y)][3] - o[0][3])/float(total_time)
@@ -283,8 +257,6 @@ def calc_data(o):
 #size of whole signature
     size_of_signature = (maximum_x - minimum_x) * (maximum_y - minimum_y)
 
-    features += [o[0][1]]
-    features += [o[0][2]]
     #3
     features += [break_times]
     features += [total_time]
@@ -350,55 +322,3 @@ def calc_data(o):
     features += [size_of_signature]
 
     return features
-
-def formatchange(data):
-	words[2] = int(words[2])
-	words[3] = long(words[3])
-	words[4] = float(words[4])
-        words[5] = float(words[5])
-        words[6] = float(words[6])
-        words[7] = float(words[7])
-
-
-
-#
-old_data = []
-last_number = 1
-data = []
-
-fil = open(r"C:\Users\Administrator\Desktop\Research\signature authentication\50renzuizhongshuju.txt","r")
-re = open(r"c:\50 result samples.txt", 'w')
-try :
-    while 1 == 1:
-        line = fil.readline()
-        words = line.split()
-        words[2] = int(words[2])
-        words[3] = long(words[3])
-        words[4] = float(words[4])
-        words[5] = float(words[5])
-        words[6] = float(words[6])
-        words[7] = float(words[7])
-        if words[2] != last_number:
-            data = calc_data(old_data)
-            for i in data:
-                re.write(str(i))
-                re.write(",")
-            re.write("\r\n")
-            del data[:]
-            del old_data[:]
-            old_data += [words]
-            last_number = words[2]
-        else:
-            old_data += [words]
-except IndexError:
-    data = [calc_data(old_data)]
-    for i in data:
-        re.write(str(i))
-        re.write(",")
-    re.write("\r\n")
-    fil.close()
-    re.close()
-    print "0"
-else:
-    print "1"
-#if words[8] != "DOWN" and words[8] != "UP":

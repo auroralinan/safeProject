@@ -8,5 +8,9 @@ print x[0:2][:]
 X = np.matrix(x)
 print X[0:2][:,0]
 
+x = ['123123', '123123']
+string = '[' +', '.join('"' + str(i) + '"' for i in x) + ']'
+print string
+
 
 
