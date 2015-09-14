@@ -6,7 +6,7 @@ import json
 import random
 
 
-# import pwd.train_pwd as trp
+import pwd.train_pwd as trp
 import signature.train_signature as trs
 
 
