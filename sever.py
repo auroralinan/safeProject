@@ -27,6 +27,7 @@ urls = (
 	"/identifycode", "identifyCode",
 	"/transfer", 'transfer',
 	"/receivedata", 'receiveData',
+	"/confirmpaied", 'confirmPaied',
 )
 
 # class ClassName:
@@ -73,7 +74,7 @@ def transferPaied(transid):
 			res = bankdb.update('trans_log', where="transid={}".format(transid), payinfo='1')
 			x = res[0]
 			print 'change rest done!'
-			return 1
+			return 'ok'
 		except:
 			return 'change rest wrong!'
 
@@ -173,7 +174,6 @@ class Upload:
         fout.close()
 
 class getCardid:
-
     def GET(self):
         return self.POST()
 
@@ -217,7 +217,7 @@ class getRest:
 		if 'cardid' in data.keys():
 			card = data.cardid
 			global bankdb
-			bankdb.select('card', what='rest', where="cardid='{}'".format(card), _test=True)
+			bankdb.select('card', what='rest, name', where="cardid='{}'".format(card), _test=True)
 			resRest = bankdb.select('card', what='rest', where="cardid='{}'".format(card))
 			try:
 				lengthRest = len(resRest)
@@ -270,9 +270,10 @@ class newCard:
 					bank = temp['bank']
 					type_ = temp['type']
 					name = data.name
-					return bankdb.insert('card', cardid=cardid, name=name, phone=data.phone, uid=uid, rest=randnum, bank=bank, type=type_)
+					bankdb.insert('card', cardid=cardid, name=name, phone=data.phone, uid=uid, rest=randnum, bank=bank, type=type_)
+					return 'ok'
 			except:
-				return 1
+				return 'new card wrong'
 		else:
 			return 'could not find cardid!'
 
@@ -364,7 +365,7 @@ class receiveData:
 			if tag == 'test':
 				#verify and return
 				if verify(username, tag) == 1:
-					return transferPaied(data.transid)
+					return 1
 				else:
 					return 0
 			else:
@@ -379,7 +380,14 @@ class receiveData:
 		else:
 			return 0
 
+class confirmPaied:
+	def GET(self):
+		pass
 
+	def POST(self):
+		data = web.input()
+		if 'transid' in data.keys():
+			return transferPaied(data.transid)
 
 
 
