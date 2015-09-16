@@ -6,7 +6,7 @@ import json
 import random
 
 
-import pwd.train_pwd as trp
+# import pwd.train_pwd as trp
 import signature.train_signature as trs
 
 
@@ -28,6 +28,9 @@ urls = (
 	"/transfer", 'transfer',
 	"/receivedata", 'receiveData',
 	"/confirmpaied", 'confirmPaied',
+	"/changepassword", "changePassword",
+	"/deletesign", "deleteSign",
+	"/deletephoto", "deletePhoto",
 )
 
 # class ClassName:
@@ -54,11 +57,15 @@ def transferPaied(transid):
 	rest = 'rest'
 	try:
 		res = bankdb.select('trans_log', what='transcardid, amount, fee', where="transid={}".format(transid))
-		cardid = res[0].transcardid
-		amount = res[0].amount
-		fee = res[0].fee
+		temp = res[0]
+		cardid = temp.transcardid
+		amount = temp.amount
+		fee = temp.fee
+		bankdb.select('card', what='rest', where="cardid='{}'".format(cardid), _test=True)
 		res = bankdb.select('card', what='rest', where="cardid='{}'".format(cardid))
-		rest = res[0].rest
+		temp = res[0]
+		rest = temp.rest
+		print rest
 	except:
 		return 'read card info wrong!'
 	amount = float(amount)
@@ -69,10 +76,8 @@ def transferPaied(transid):
 		try:
 			bankdb.update('card', where="cardid='{}'".format(cardid), rest='{}'.format(rest), _test=True)
 			res = bankdb.update('card', where="cardid='{}'".format(cardid), rest='{}'.format(rest))
-			x = res[0]
 			bankdb.update('trans_log', where="transid={}".format(transid), payinfo='1', _test=True)
 			res = bankdb.update('trans_log', where="transid={}".format(transid), payinfo='1')
-			x = res[0]
 			print 'change rest done!'
 			return 'ok'
 		except:
@@ -84,17 +89,37 @@ def transferReceived(transid):
 
 def verify(username, tag):
 	if tag == 'signature':
-		return
+		return 1
+	elif tag == 'password':
+		return 1
+	elif tag == 'identity':
+		return 1
+	else:
+		return 1
 
 def train(username, tag):
 	if tag == 'signature':
-		return trs.train(username, bankdb)
+		# return trs.train(username, bankdb)
+		return 1
 	elif tag == 'password':
 		# return trp.train(username, bankdb)
 		return 1
 	elif tag == 'identity':
 		return 1
 
+def getTestTimes(username, type_):
+	colname = type_ + 'Times'
+	print 'get test times for {} in {}'.format(username, colname)
+	global bankdb
+	res = bankdb.select('user_verify', where="username='{}'".format(username), what=colname)
+	try:
+		num = res[0][colname]
+		num = int(num) +1
+		bankdb.query("UPDATE user_verify SET {}={} WHERE username='{}'".format(colname, num, username), _test=True)
+		bankdb.query("UPDATE user_verify SET {}={} WHERE username='{}'".format(colname, num, username))
+		return num
+	except:
+		return 99
 # def dbconn():
 # 	# myvar = dict(name="Bob")
 # 	# results = db.select('mytable', myvar, where="name = $name")
@@ -218,7 +243,7 @@ class getRest:
 			card = data.cardid
 			global bankdb
 			bankdb.select('card', what='rest, name', where="cardid='{}'".format(card), _test=True)
-			resRest = bankdb.select('card', what='rest', where="cardid='{}'".format(card))
+			resRest = bankdb.select('card', what='rest, name', where="cardid='{}'".format(card))
 			try:
 				lengthRest = len(resRest)
 				if lengthRest != 1:
@@ -240,7 +265,8 @@ class newUser:
 		password = data.password
 		global bankdb
 		try:
-			return bankdb.insert('user_info', username=username, password=password, pwdstatus=0, signstatus=0, photostatus=0)
+			bankdb.insert('user_verify', username=username, passwordTimes=0, signatureTimes=0, identityTimes=0)
+			return bankdb.insert('user_info', username=username, password=password, pwdstatus=0, signstatus=0, photostatus=0, identitystatus=0)
 		except:
 			return 'something wrong!'
 
@@ -337,12 +363,15 @@ class receiveData:
 			databody = data.databody
 			datadict = json.loads(databody)
 			print username, tag, type_, type(datadict), type(databody)
-			num = 1
+			if tag == 'train':
+				num = 1
+			else:
+				num = getTestTimes(username, type_)
 			if type_ == 'signature':
 				ty = 'data_' + type_
 				for i in range(len(datadict)):
-					temp = [int(datadict[i][u'numOfSign']), int(datadict[i][u'Time']), float(datadict[i][u'X']), float(datadict[i][u'Y']),
-					        float(datadict[i][u'P']), float(datadict[i][u'S']), datadict[i][u'move']]
+					temp = [int(datadict[i][u'numOfSign']), int(datadict[i][u'time']), float(datadict[i][u'x']), float(datadict[i][u'y']),
+					        float(datadict[i][u'p']), float(datadict[i][u's']), datadict[i][u'status']]
 					res = bankdb.insert(ty, username=username, tag=tag, num=temp[0], X=temp[2], Y=temp[3], S=temp[5],
 					                    Time=temp[1], Pressure=temp[4], move=temp[6])
 					if res is not None:
@@ -392,7 +421,8 @@ class confirmPaied:
 
 
 if __name__ == "__main__":
-	print train('linan', 'signature')
+	# print train('linan', 'signature')
+	c
 	app = web.application(urls, globals())
 	app.run()
 

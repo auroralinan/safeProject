@@ -4,7 +4,7 @@ __author__ = 'Nan Li'
 import requests
 
 if __name__ == "__main__":
-	http_url = 'http://localhost:1234/checkin'
+	http_url = 'http://192.168.81.63:8080/checkin'
 	data = {'username': 'linan'}
 	data0 = {'username': 'linan', 'password': '123456'}
 	data1 = {'username': '1865834', 'password': "123456"}
